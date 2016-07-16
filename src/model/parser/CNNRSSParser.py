@@ -18,6 +18,11 @@ def parse(link, src, enc='utf-8'):
         title = entry.title.encode(enc)
         desc = RSSParser.strip_html(entry.description.encode(enc))
 
+        # remove 'Sponsored' in CNN sources
+        spon_index = desc.find("Sponsored")
+        if spon_index >= 0:
+            desc = desc[0: spon_index]
+
         if is_empty_content(title) or is_empty_content(desc):
             continue
 

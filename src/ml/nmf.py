@@ -8,6 +8,7 @@ May 2016
 import numpy
 import random
 import math
+import sys
 
 
 
@@ -31,14 +32,16 @@ def factorize(v, pc=10, it=50, rate=None):
 
     cost = 0.0
 
+    sys.stdout.write("nmf iteration - ")
+
     for i in range(it):
         wh = w * h
         pre_cost = cost
         cost = __dif_cost(v, wh) * 1.0
 
-        # test
+        # log
         if i % 10 == 0:
-            print("iteration %d, cost = %f" % (i, cost))
+            sys.stdout.write("%d > " % i)
 
         if cost == 0 or math.fabs(pre_cost - cost) / cost < rate:
             break
@@ -58,5 +61,7 @@ def factorize(v, pc=10, it=50, rate=None):
         wd = (w * h * numpy.transpose(h))
 
         w = numpy.matrix(numpy.array(w) * numpy.array(wn) / numpy.array(wd))
+
+    print(".")
 
     return w, h

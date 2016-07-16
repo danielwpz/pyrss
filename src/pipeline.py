@@ -4,7 +4,7 @@ pipeline.py
 Daniel Wang
 May 2016
 """
-
+import sys
 from model import Splitter
 import math
 from ml import feature
@@ -52,10 +52,12 @@ class RSSPipeline:
         """
 
         # get matrix :)
-        words_matrix, features_key = feature.get_feature_matrix(art_w, get_tfidf)
+        words_matrix, features_key = feature.get_feature_matrix(art_w)
+
+        self.display_features(words_matrix, features_key)
 
         # extract_features
-        weight_matrix, feature_matrix = nmf.factorize(numpy.matrix(words_matrix), pc=20, it=50)
+        weight_matrix, feature_matrix = nmf.factorize(numpy.matrix(words_matrix), pc=30, it=100)
 
         # test
         """
@@ -64,28 +66,57 @@ class RSSPipeline:
         print("Feature Matrix")
         print(feature_matrix)
         """
-        self.display_result(all_articles, weight_matrix)
+        self.display_result(all_articles, features_key, weight_matrix, feature_matrix, k=6)
 
         return words_matrix
 
 
-    def display_result(self, articles, weight_matrix, k=5):
+    def display_features(self, article_features, feature_keys, k=8):
+        for i in range(len(article_features)):
+            f_vector = [(article_features[i][index], index) for index in range(len(feature_keys))]
+
+            f_vector.sort(key=lambda x: x[0])
+            f_vector.reverse()
+
+            str = ""
+            for f in f_vector[0: k]:
+                str += " (%s: %2.2f) " % (feature_keys[f[1]], f[0])
+
+            print(str)
+
+
+
+    def display_result(self, articles, words, weight_matrix, feature_matrix, k=5, l=6):
         n = numpy.shape(weight_matrix)[1]  # num of features
 
-        # for each feature, display kth most relative articles
+        print("%d articles, %d features computed." % (len(articles), n))
+
+        # for each feature, display kth most relative articles and lth most relative words
         for i in range(n):
             print("Feature %d:" % (i + 1))
+
+            sys.stdout.write("(")
+            word_vector = [(feature_matrix[i, index], index) for index in range(len(words))]
+            word_vector.sort(key=lambda x: x[0])
+            word_vector.reverse()
+
+            for j in range(l):
+                word_index = word_vector[j][1]
+                word = words[word_index]
+                sys.stdout.write("%s, " % word)
+            print(')')
 
             feature_vector = [(weight_matrix[index, i], index) for index in range(len(articles))]
             # sort feature_vector
             feature_vector.sort(key=lambda x: x[0])
+            feature_vector.reverse()
 
             # display
             for j in range(k):
                 article_index = feature_vector[j][1]
                 article = articles[article_index]
 
-                print("%d - %s" % (j, article))
+                print("%2.2f - %s" % (feature_vector[j][0], article))
 
             print
 

@@ -33,8 +33,11 @@ def get_feature_matrix(items, weight_calculate=default_weight_calculate):
     """
     Give the features for a list of items,
     return the corresponding feature matrix
+    (see previous feature definition)
     :param items: items with features of each one
-    :param weight_calculate: weight calculate function
+    :param weight_calculate: weight calculating function,
+                             be responsible to calculate each element in result matrix
+                             from original features
     :return: a MxN matrix
     """
     # reduce features to get all_features
