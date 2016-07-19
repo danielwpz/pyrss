@@ -29,11 +29,12 @@ class RSSPipeline:
     # default values
     word_splitter = Splitter  # word splitter
 
-    def __init__(self, source=[], engine=None):
+    def __init__(self, source=None):
+        if source is None:
+            source = []
         self.source = source
-        self.engine = engine
 
-    def run(self):
+    def run(self, pc=30):
         all_articles = []
 
         # get articles from all sources
@@ -41,60 +42,56 @@ class RSSPipeline:
             all_articles.extend(src.get_articles())
 
         # get all words
-        art_w = self.get_article_words(all_articles)
-
-        """
-        ## test
-        k = 0
-        print(all_articles[k].title, all_articles[k].description)
-        for wd in art_w[k].keys():
-            print("tfidf(%s) = %f" % (wd, get_tfidf(wd, art_w, k)))
-        """
+        art_w = self.__get_article_words(all_articles)
 
         # get matrix :)
-        words_matrix, features_key = feature.get_feature_matrix(art_w)
+        words_matrix, features_key = feature.get_feature_matrix(art_w, weight_calculate=get_tfidf)
 
-        self.display_features(words_matrix, features_key)
+        self.__display_features(words_matrix, features_key)
 
         # extract_features
-        weight_matrix, feature_matrix = nmf.factorize(numpy.matrix(words_matrix), pc=30, it=100)
+        weight_matrix, feature_matrix = nmf.factorize(words_matrix, pc=pc, it=60)
+        self.__display_result(all_articles, features_key, weight_matrix, feature_matrix, k=6)
 
-        # test
-        """
-        print("Weight Matrix:")
-        print(weight_matrix)
-        print("Feature Matrix")
-        print(feature_matrix)
-        """
-        self.display_result(all_articles, features_key, weight_matrix, feature_matrix, k=6)
+        result = self.__generate_result(all_articles, weight_matrix)
 
-        return words_matrix
+        return result
 
+    @staticmethod
+    def __generate_result(articles, weight_matrix):
+        M = weight_matrix.shape[0]   # number of articles
+        N = weight_matrix.shape[1]   # number of features
 
-    def display_features(self, article_features, feature_keys, k=8):
-        for i in range(len(article_features)):
-            f_vector = [(article_features[i][index], index) for index in range(len(feature_keys))]
+        result = [[(weight_matrix[m, n], articles[m]) for m in range(M)] for n in range(N)]
+        return result
+
+    @staticmethod
+    def __display_features(article_features, feature_keys, k=8):
+        print("Article-Word matrix (top %d Words): " % k)
+        for i in range(article_features.shape[0]):
+            f_vector = [(article_features[i, index], index) for index in range(feature_keys.size)]
 
             f_vector.sort(key=lambda x: x[0])
             f_vector.reverse()
 
-            str = ""
+            line = ""
             for f in f_vector[0: k]:
-                str += " (%s: %2.2f) " % (feature_keys[f[1]], f[0])
+                line += " (%s: %2.2f) " % (feature_keys[f[1]], f[0])
 
-            print(str)
+            print(line)
 
-
-
-    def display_result(self, articles, words, weight_matrix, feature_matrix, k=5, l=6):
+    @staticmethod
+    def __display_result(articles, words, weight_matrix, feature_matrix, k=5, l=6):
         n = numpy.shape(weight_matrix)[1]  # num of features
 
+        print
         print("%d articles, %d features computed." % (len(articles), n))
 
         # for each feature, display kth most relative articles and lth most relative words
         for i in range(n):
             print("Feature %d:" % (i + 1))
 
+            # print l most related words for each feature
             sys.stdout.write("(")
             word_vector = [(feature_matrix[i, index], index) for index in range(len(words))]
             word_vector.sort(key=lambda x: x[0])
@@ -106,6 +103,7 @@ class RSSPipeline:
                 sys.stdout.write("%s, " % word)
             print(')')
 
+            # print article groups
             feature_vector = [(weight_matrix[index, i], index) for index in range(len(articles))]
             # sort feature_vector
             feature_vector.sort(key=lambda x: x[0])
@@ -120,8 +118,7 @@ class RSSPipeline:
 
             print
 
-
-    def get_article_words(self, articles):
+    def __get_article_words(self, articles):
         article_words = []  # occurrence of words in each article
 
         for a in articles:
@@ -138,4 +135,3 @@ class RSSPipeline:
             article_words.append(ar_word)
 
         return article_words
-

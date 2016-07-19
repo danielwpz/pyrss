@@ -21,7 +21,8 @@ class Article:
         self.src = src
 
     def __str__(self):
-        return "%s[%s] - %s" % (self.src, self.title, self.description)
+        str = "%s[%s] - %s" % (self.src, self.title, self.description)
+        return str.replace("\n", "")
 
     def __unicode__(self):
         return self.__str__()

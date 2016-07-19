@@ -8,10 +8,29 @@ May 2016
 
 e.g.
 feature = [
-    {'A': 1.0, 'B': 2.9, 'C': 0.0},
-    {'B': 1.1, 'C': 2.7, 'D': 3.3}
+    {'feature_1': 1.0, 'feature_2': 2.9, 'feature_3': 0.0, 'feature_4': 0.0},
+    {'feature_1': 0.0, 'feature_2': 1.1, 'feature_3': 2.7, 'feature_4': 3.3},
+    ....
     ]
+
+Which could be written as an item-feature matrix:
+
+===========================================================
+            feature_1  feature_2  feature_3  ...  feature_m
+item_1        1.0         2.9        0.0
+
+item_2        0.0         1.1        2.7
+
+...
+
+item_n
+===========================================================
+
+, in which an element (i,j) indicates the weight of feature_j
+in item_i. And 0 means the item doesn't contain that feature.
 """
+
+import numpy
 
 
 def default_weight_calculate(f, items, k):
@@ -32,13 +51,16 @@ def default_weight_calculate(f, items, k):
 def get_feature_matrix(items, weight_calculate=default_weight_calculate):
     """
     Give the features for a list of items,
-    return the corresponding feature matrix
+    return the corresponding item-feature matrix
     (see previous feature definition)
+
     :param items: items with features of each one
     :param weight_calculate: weight calculating function,
                              be responsible to calculate each element in result matrix
                              from original features
-    :return: a MxN matrix
+    :return:
+        - a MxN numpy matrix, which is the item-feature above
+        - a 1xN numpy array, which serves as the column names
     """
     # reduce features to get all_features
     all_features = {}
@@ -63,4 +85,4 @@ def get_feature_matrix(items, weight_calculate=default_weight_calculate):
             vector[i] = weight_calculate(all_features_key[i], items, m)
         matrix.append(vector)
 
-    return matrix, all_features_key
+    return numpy.matrix(matrix), numpy.array(all_features_key)

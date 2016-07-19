@@ -24,9 +24,10 @@ if __name__ == "__main__":
 
     collection = RSSCollection.RSSCollection(rss)
 
-    feeds = collection.get_feeds_by_category("t")
+    feeds = collection.get_feeds_by_category("tech")
 
     pl = pipeline.RSSPipeline(feeds)
 
-    m = pl.run()
-    # print(m)
+    m = pl.run(pc=10)
+
+    print(m)

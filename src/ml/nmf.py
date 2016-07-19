@@ -11,7 +11,6 @@ import math
 import sys
 
 
-
 def __dif_cost(a, b):
     dif = 0
 
@@ -20,7 +19,6 @@ def __dif_cost(a, b):
             dif += pow(a[i, j] - b[i, j], 2)
 
     return dif
-
 
 
 def factorize(v, pc=10, it=50, rate=None):
