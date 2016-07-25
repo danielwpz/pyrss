@@ -28,6 +28,6 @@ if __name__ == "__main__":
 
     pl = pipeline.RSSPipeline(feeds)
 
-    m = pl.run(pc=10)
+    m = pl.run()
 
     print(m)

@@ -13,7 +13,8 @@ import numpy
 
 
 def get_tfidf(word, article_words, i):
-    tf = article_words[i][word] * 1.0 if article_words[i].get(word) is not None else 0.0
+    words_cnt = sum(article_words[i].values()) * 1.0
+    tf = (article_words[i][word] * 1.0 if article_words[i].get(word) is not None else 0.0) / words_cnt
 
     art_cnt = len([a for a in article_words if a.get(word) is not None])
     n = len(article_words)
@@ -34,20 +35,29 @@ class RSSPipeline:
             source = []
         self.source = source
 
-    def run(self, pc=30):
+    def run(self, k=None):
         all_articles = []
 
         # get articles from all sources
         for src in self.source:
             all_articles.extend(src.get_articles())
 
+        # compute pc based on the number of articles
+        pc = len(all_articles) / 2 if k is None else k
+
         # get all words
-        art_w = self.__get_article_words(all_articles)
+        art_w = self.__get_article_words(all_articles, title_weight=2)
+        art_w_light_title = self.__get_article_words(all_articles, title_weight=1)
 
         # get matrix :)
         words_matrix, features_key = feature.get_feature_matrix(art_w, weight_calculate=get_tfidf)
+        words_matrix_lt, features_key_lt = feature.get_feature_matrix(art_w_light_title, weight_calculate=get_tfidf)
 
+        print("Heavy title:")
         self.__display_features(words_matrix, features_key)
+        print
+        print("Light title:")
+        self.__display_features(words_matrix_lt, features_key_lt)
 
         # extract_features
         weight_matrix, feature_matrix = nmf.factorize(words_matrix, pc=pc, it=60)
@@ -59,8 +69,8 @@ class RSSPipeline:
 
     @staticmethod
     def __generate_result(articles, weight_matrix):
-        M = weight_matrix.shape[0]   # number of articles
-        N = weight_matrix.shape[1]   # number of features
+        M = weight_matrix.shape[0]  # number of articles
+        N = weight_matrix.shape[1]  # number of features
 
         result = [[(weight_matrix[m, n], articles[m]) for m in range(M)] for n in range(N)]
         return result
@@ -110,27 +120,40 @@ class RSSPipeline:
             feature_vector.reverse()
 
             # display
+            emphasize = ""
+            if feature_vector[0][0] < (feature_vector[1][0] * 2):
+                emphasize = "!! "
+            elif feature_vector[0][0] < (feature_vector[1][0] * 5):
+                emphasize = "! "
+
             for j in range(k):
                 article_index = feature_vector[j][1]
                 article = articles[article_index]
 
-                print("%2.2f - %s" % (feature_vector[j][0], article))
+                print("%s%2.2f - %s" % (emphasize, feature_vector[j][0], article))
 
             print
 
-    def __get_article_words(self, articles):
+    def __get_article_words(self, articles, title_weight=2):
         article_words = []  # occurrence of words in each article
 
         for a in articles:
-            words = self.word_splitter.split(a.title) \
-                    + self.word_splitter.split(a.description) \
-                    + self.word_splitter.split(a.content)
+            # experimental
+            # assign words in title more weight
+            body_words = self.word_splitter.split(a.description) \
+                         + self.word_splitter.split(a.content)
+
+            title_words = self.word_splitter.split(a.title)
 
             ar_word = {}
 
-            for word in words:
+            for word in body_words:
                 ar_word.setdefault(word, 0)
                 ar_word[word] += 1
+
+            for word in title_words:
+                ar_word.setdefault(word, 0)
+                ar_word[word] += 1 * title_weight
 
             article_words.append(ar_word)
 
